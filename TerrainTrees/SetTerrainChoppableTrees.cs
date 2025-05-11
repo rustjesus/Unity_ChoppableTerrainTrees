@@ -106,5 +106,41 @@ public class SetTerrainCoppableTrees : MonoBehaviour
         trees.Add(newTree);
         terrain.terrainData.treeInstances = trees.ToArray();
     }
+    public static bool RemoveTreeInstance(Vector3 worldPosition, out float widthScale, out float heightScale, float maxDistance = 0.1f)
+    {
+        widthScale = 1f;
+        heightScale = 1f;
+
+        Terrain terrain = Terrain.activeTerrain;
+        if (terrain == null) return false;
+
+        Vector3 terrainSize = terrain.terrainData.size;
+        Vector3 terrainPosition = terrain.transform.position;
+
+        Vector3 relativePos = (worldPosition - terrainPosition);
+        Vector3 normalizedPos = new Vector3(
+            relativePos.x / terrainSize.x,
+            relativePos.y / terrainSize.y,
+            relativePos.z / terrainSize.z
+        );
+
+        List<TreeInstance> trees = new List<TreeInstance>(terrain.terrainData.treeInstances);
+
+        for (int i = 0; i < trees.Count; i++)
+        {
+            Vector3 treePos = trees[i].position;
+            float dist = Vector2.Distance(new Vector2(treePos.x, treePos.z), new Vector2(normalizedPos.x, normalizedPos.z));
+            if (dist <= maxDistance / terrainSize.x)
+            {
+                widthScale = trees[i].widthScale;
+                heightScale = trees[i].heightScale;
+                trees.RemoveAt(i);
+                terrain.terrainData.treeInstances = trees.ToArray();
+                return true;
+            }
+        }
+
+        return false;
+    }
 
 }
