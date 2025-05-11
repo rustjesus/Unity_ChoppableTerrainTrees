@@ -40,6 +40,15 @@ public class SetTerrainCoppableTrees : MonoBehaviour
             Quaternion rotation = Quaternion.AngleAxis(tree.rotation * Mathf.Rad2Deg, Vector3.up);
 
             GameObject treeObj = Instantiate(matchingPrefab, worldPosition, rotation, parent.transform);
+
+            // Apply scale from terrain tree
+            Vector3 originalScale = matchingPrefab.transform.localScale;
+            treeObj.transform.localScale = new Vector3(
+                originalScale.x * tree.widthScale,
+                originalScale.y * tree.heightScale,
+                originalScale.z * tree.widthScale
+            );
+
             treeObj.GetComponent<WoodCuttingTree>().isSpawnedTree = true;
             treeObj.GetComponent<AI_Health>().prototypeIndex = tree.prototypeIndex;
 
@@ -76,6 +85,7 @@ public class SetTerrainCoppableTrees : MonoBehaviour
             }
         }
     }
+
     public static void RespawnTree(Vector3 worldPosition, int prototypeIndex = 0, float widthScale = 1f, float heightScale = 1f, float colorVariation = 0.2f)
     {
         Terrain terrain = Terrain.activeTerrain;
