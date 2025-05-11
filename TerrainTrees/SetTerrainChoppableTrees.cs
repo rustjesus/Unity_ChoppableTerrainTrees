@@ -6,7 +6,7 @@ using UnityEngine.AI;
 
 public class SetTerrainCoppableTrees : MonoBehaviour
 {
-    [SerializeField] private bool isSnowing = false;
+    public bool isSnowing = false;
     [SerializeField] private GameObject[] choppablePrefabs;
 
     void Start()
