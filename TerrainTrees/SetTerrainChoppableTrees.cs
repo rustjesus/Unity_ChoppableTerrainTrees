@@ -6,6 +6,7 @@ using UnityEngine.AI;
 
 public class SetTerrainCoppableTrees : MonoBehaviour
 {
+    [SerializeField] private bool isSnowing = false;
     [SerializeField] private GameObject[] choppablePrefabs;
 
     void Start()
@@ -86,20 +87,20 @@ public class SetTerrainCoppableTrees : MonoBehaviour
         }
     }
 
-    public static void RespawnTree(Vector3 worldPosition, int prototypeIndex = 0, float widthScale = 1f, float heightScale = 1f, float colorVariation = 0.2f)
+    public static float RespawnTree(Vector3 normalizedPos, int prototypeIndex = 0, float widthScale = 1f, float heightScale = 1f, float colorVariation = 0.2f)
     {
         Terrain terrain = Terrain.activeTerrain;
-        if (terrain == null) return;
+        if (terrain == null) return normalizedPos.y;
 
-        Vector3 terrainSize = terrain.terrainData.size;
+        TerrainData terrainData = terrain.terrainData;
+        Vector3 terrainSize = terrainData.size;
         Vector3 terrainPosition = terrain.transform.position;
 
-        // Convert world position to normalized terrain local position (0-1)
-        Vector3 relativePos = (worldPosition - terrainPosition);
-        Vector3 normalizedPos = new Vector3(
-            relativePos.x / terrainSize.x,
-            0, // Y is not used for placement
-            relativePos.z / terrainSize.z
+        // Convert the normalized position back to world position
+        Vector3 worldPosition = new Vector3(
+            normalizedPos.x * terrainSize.x + terrainPosition.x,
+            0f,
+            normalizedPos.z * terrainSize.z + terrainPosition.z
         );
 
         TreeInstance newTree = new TreeInstance
@@ -112,11 +113,16 @@ public class SetTerrainCoppableTrees : MonoBehaviour
             lightmapColor = Color.white
         };
 
-        List<TreeInstance> trees = new List<TreeInstance>(terrain.terrainData.treeInstances);
+        List<TreeInstance> trees = new List<TreeInstance>(terrainData.treeInstances);
         trees.Add(newTree);
-        terrain.terrainData.treeInstances = trees.ToArray();
+        terrainData.treeInstances = trees.ToArray();
+
+        // Return world position based on the normalized position
+        return worldPosition.y;
     }
-    public static bool RemoveTreeInstance(Vector3 worldPosition, out float widthScale, out float heightScale, float maxDistance = 0.1f)
+
+
+    public static bool RemoveTreeInstance(Vector3 worldPosition, out float widthScale, out float heightScale, float maxDistance = 0.01f)
     {
         widthScale = 1f;
         heightScale = 1f;
@@ -152,5 +158,6 @@ public class SetTerrainCoppableTrees : MonoBehaviour
 
         return false;
     }
+
 
 }
