@@ -1,3 +1,7 @@
+#if UNITY_EDITOR
+using UnityEditor;
+using UnityEditor.SceneManagement;
+#endif
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -9,6 +13,7 @@ public static class TreeRestorationManager
     {
         removedTrees.Add((worldPosition, prototypeIndex, widthScale, heightScale));
     }
+
     public static void UntrackRestoredTree(Vector3 worldPosition, int prototypeIndex)
     {
         removedTrees.RemoveAll(tree =>
@@ -16,25 +21,54 @@ public static class TreeRestorationManager
             Vector3.Distance(tree.worldPosition, worldPosition) < 0.1f); // small tolerance
     }
 
-
 #if UNITY_EDITOR
-    [UnityEditor.InitializeOnLoadMethod]
-    static void RegisterExitHandler()
+    [InitializeOnLoadMethod]
+    static void RegisterEditorEvents()
     {
-        UnityEditor.EditorApplication.playModeStateChanged += OnPlayModeStateChanged;
+        EditorApplication.playModeStateChanged += OnPlayModeStateChanged;
+        EditorSceneManager.sceneOpened += OnSceneOpened;
+        EditorSceneManager.activeSceneChanged += OnActiveSceneChanged;
     }
 
-    private static void OnPlayModeStateChanged(UnityEditor.PlayModeStateChange state)
+    private static void OnPlayModeStateChanged(PlayModeStateChange state)
     {
-        if (state == UnityEditor.PlayModeStateChange.ExitingPlayMode)
+        if (state == PlayModeStateChange.ExitingPlayMode)
         {
-            foreach (var tree in removedTrees)
-            {
-                SetTerrainCoppableTrees.RespawnTree(tree.worldPosition, tree.prototypeIndex, tree.widthScale, tree.heightScale);
-            }
-
-            removedTrees.Clear();
+            RestoreTrees();
         }
+    }
+
+    private static void OnSceneOpened(UnityEngine.SceneManagement.Scene scene, OpenSceneMode mode)
+    {
+        RestoreTrees();
+    }
+
+    private static void OnActiveSceneChanged(UnityEngine.SceneManagement.Scene oldScene, UnityEngine.SceneManagement.Scene newScene)
+    {
+        RestoreTrees();
+    }
+
+    private static void RestoreTrees()
+    {
+        Terrain terrain = Terrain.activeTerrain;
+        if (terrain == null) return;
+
+        Vector3 terrainPos = terrain.transform.position;
+        Vector3 terrainSize = terrain.terrainData.size;
+
+        foreach (var tree in removedTrees)
+        {
+            Vector3 relative = tree.worldPosition - terrainPos;
+            Vector3 normalizedPos = new Vector3(
+                relative.x / terrainSize.x,
+                relative.y / terrainSize.y,
+                relative.z / terrainSize.z
+            );
+
+            SetTerrainCoppableTrees.RespawnTree(normalizedPos, tree.prototypeIndex, tree.widthScale, tree.heightScale);
+        }
+
+        removedTrees.Clear();
     }
 #endif
 }
